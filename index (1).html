@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>e-Gate</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L90 20 L90 50 C90 72 72 88 50 95 C28 88 10 72 10 50 L10 20 Z' fill='%231a237e'/><path d='M35 50 L45 60 L65 40' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<style>
+  :root {
+    --navy: #1a237e;
+    --navy-dark: #0d1257;
+    --navy-mid: #283593;
+    --navy-light: #3949ab;
+    --navy-pale: #e8eaf6;
+    --accent: #00bcd4;
+    --accent2: #26c6da;
+    --white: #ffffff;
+    --gray-50: #f8f9ff;
+    --gray-100: #f0f2ff;
+    --gray-200: #e0e4f0;
+    --gray-400: #8892b0;
+    --gray-600: #4a5580;
+    --success: #00c853;
+    --danger: #f44336;
+    --warning: #ff9800;
+    --sidebar-w: 260px;
+    --radius: 14px;
+    --shadow: 0 4px 24px rgba(26,35,126,0.10);
+    --shadow-lg: 0 8px 40px rgba(26,35,126,0.18);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--gray-50); color:#222; min-height:100vh; overflow-x:hidden; }
+
+  /* ── SIGN IN ── */
+  #signin-screen {
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 50%, var(--navy-light) 100%);
+    position:relative; overflow:hidden;
+  }
+  #signin-screen::before {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at 70% 30%, rgba(0,188,212,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 50%);
+  }
+  .signin-card {
+    background:var(--white); border-radius:24px; padding:48px 44px 40px;
+    width:100%; max-width:420px; box-shadow:var(--shadow-lg);
+    position:relative; z-index:1; animation:slideUp .5s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
+  .shield-logo {
+    width:72px; height:72px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--navy),var(--navy-light)); border-radius:18px;
+    box-shadow:0 6px 20px rgba(26,35,126,0.35);
+  }
+  .signin-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:2.1rem; font-weight:800; color:var(--navy); text-align:center; letter-spacing:-0.5px; }
+  .signin-sub { text-align:center; color:var(--gray-400); font-size:.95rem; margin-bottom:32px; margin-top:4px; }
+  .login-hint { background:var(--navy-pale); border-radius:10px; padding:10px 14px; margin-bottom:20px; font-size:.82rem; color:var(--navy); border-left:3px solid var(--navy-light); }
+  .login-hint strong { display:block; margin-bottom:4px; color:var(--navy); }
+  .field-wrap { position:relative; margin-bottom:18px; }
+  .field-wrap .fi { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--gray-400); }
+  .field-wrap input { width:100%; padding:13px 14px 13px 42px; border:1.5px solid var(--gray-200); border-radius:10px; font-size:.97rem; font-family:'DM Sans',sans-serif; color:#222; outline:none; transition:border .2s,box-shadow .2s; background:var(--gray-50); }
+  .field-wrap input:focus { border-color:var(--navy-light); box-shadow:0 0 0 3px rgba(57,73,171,0.1); background:#fff; }
+  .field-wrap input.err { border-color:var(--danger); }
+  .btn-primary { width:100%; padding:14px; background:linear-gradient(135deg,var(--navy),var(--navy-light)); color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:transform .15s,box-shadow .15s; letter-spacing:.3px; margin-top:6px; }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(26,35,126,0.35); }
+  .btn-primary:active { transform:none; }
+  .login-error { color:var(--danger); font-size:.85rem; text-align:center; margin-top:10px; display:none; }
+  .login-error.show { display:block; }
+
+  /* ── APP SHELL ── */
+  #app { display:none; height:100vh; overflow:hidden; }
+  #app.active { display:flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:var(--sidebar-w); min-width:var(--sidebar-w); height:100vh;
+    background:linear-gradient(180deg, var(--navy-dark) 0%, var(--navy) 100%);
+    display:flex; flex-direction:column; padding:0 0 24px; overflow:hidden;
+    box-shadow:4px 0 24px rgba(26,35,126,0.18); position:relative; z-index:10;
+    transition:transform .3s ease, min-width .3s ease, width .3s ease;
+  }
+  .sidebar-header { padding:28px 24px 20px; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:12px; }
+  .sidebar-logo { width:40px; height:40px; background:rgba(255,255,255,0.12); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .sidebar-brand { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:1.25rem; color:#fff; letter-spacing:-.3px; }
+  .sidebar-brand span { display:block; font-size:.65rem; font-weight:500; color:rgba(255,255,255,0.5); letter-spacing:.5px; text-transform:uppercase; margin-top:1px; }
+  .sidebar-nav { flex:1; padding:16px 14px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+  .nav-item {
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px;
+    color:rgba(255,255,255,0.6); font-size:.93rem; font-weight:500; cursor:pointer;
+    transition:all .2s; text-decoration:none; white-space:nowrap; overflow:hidden;
+  }
+  .nav-item svg { flex-shrink:0; }
+  .nav-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+  .nav-item.active { background:rgba(255,255,255,0.15); color:#fff; font-weight:600; }
+  .nav-item.active svg { filter:drop-shadow(0 0 6px rgba(0,188,212,0.7)); }
+  .sidebar-footer { padding:16px 14px 0; border-top:1px solid rgba(255,255,255,0.08); margin-top:auto; }
+  .signout-btn { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px; color:rgba(255,255,255,0.5); font-size:.9rem; cursor:pointer; transition:all .2s; white-space:nowrap; }
+  .signout-btn:hover { background:rgba(255,0,0,0.12); color:#ff6b6b; }
+
+  /* ── MAIN CONTENT ── */
+  .main { flex:1; overflow-y:auto; background:var(--gray-50); }
+  .topbar { height:64px; background:#fff; border-bottom:1px solid var(--gray-200); display:flex; align-items:center; padding:0 28px; gap:16px; position:sticky; top:0; z-index:5; box-shadow:0 2px 8px rgba(26,35,126,0.05); }
+  .topbar-toggle { display:none; cursor:pointer; padding:6px; border-radius:8px; color:var(--navy); }
+  .topbar-toggle:hover { background:var(--navy-pale); }
+  .topbar-title { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.1rem; color:var(--navy); }
+  .topbar-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .topbar-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--navy),var(--navy-light)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:.85rem; }
+  .page { display:none; padding:28px; animation:fadeIn .3s ease; }
+  .page.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+  /* ── DASHBOARD ── */
+  .page-heading { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:1.55rem; color:var(--navy); margin-bottom:6px; }
+  .page-sub { color:var(--gray-400); font-size:.93rem; margin-bottom:28px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:18px; margin-bottom:28px; }
+  .stat-card { background:#fff; border-radius:var(--radius); padding:22px 22px 18px; box-shadow:var(--shadow); border:1px solid var(--gray-200); position:relative; overflow:hidden; }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0; }
+  .stat-card.blue::before { background:linear-gradient(90deg,var(--navy),var(--navy-light)); }
+  .stat-card.cyan::before { background:linear-gradient(90deg,#00bcd4,#26c6da); }
+  .stat-card.green::before { background:linear-gradient(90deg,#00c853,#69f0ae); }
+  .stat-card.orange::before { background:linear-gradient(90deg,#ff9800,#ffb74d); }
+  .stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+  .stat-icon.blue { background:var(--navy-pale); }
+  .stat-icon.cyan { background:#e0f7fa; }
+  .stat-icon.green { background:#e8f5e9; }
+  .stat-icon.orange { background:#fff3e0; }
+  .stat-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:2rem; font-weight:800; color:var(--navy); line-height:1; }
+  .stat-label { font-size:.83rem; color:var(--gray-400); margin-top:4px; font-weight:500; }
+  .stat-badge { display:inline-block; font-size:.72rem; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--navy-pale); color:var(--navy-light); margin-top:10px; }
+  .section-title { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:1.05rem; color:var(--navy); margin-bottom:14px; }
+  .activity-list { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-200); overflow:hidden; box-shadow:var(--shadow); }
+  .activity-item { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid var(--gray-200); transition:background .15s; }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-item:hover { background:var(--gray-50); }
+  .act-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .act-dot.green { background:var(--success); }
+  .act-dot.blue { background:var(--navy-light); }
+  .act-dot.orange { background:var(--warning); }
+  .act-text { font-size:.9rem; color:#333; }
+  .act-time { margin-left:auto; font-size:.8rem; color:var(--gray-400); white-space:nowrap; }
+
+  /* ── FORMS ── */
+  .form-card { background:#fff; border-radius:var(--radius); padding:28px; box-shadow:var(--shadow); border:1px solid var(--gray-200); max-width:680px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-group.full { grid-column:1/-1; }
+  label { font-size:.85rem; font-weight:600; color:var(--gray-600); letter-spacing:.2px; }
+  .label-note { font-size:.75rem; font-weight:400; color:var(--gray-400); margin-left:6px; }
+  .form-control {
+    padding:11px 14px; border:1.5px solid var(--gray-200); border-radius:9px;
+    font-size:.93rem; font-family:'DM Sans',sans-serif; color:#222; outline:none;
+    transition:border .2s,box-shadow .2s; background:var(--gray-50); width:100%;
+  }
+  .form-control:focus { border-color:var(--navy-light); box-shadow:0 0 0 3px rgba(57,73,171,0.1); background:#fff; }
+  .form-control.err { border-color:var(--danger); }
+  .err-msg { font-size:.78rem; color:var(--danger); display:none; }
+  .err-msg.show { display:block; }
+  .btn-green { padding:13px 32px; background:linear-gradient(135deg,#00c853,#00e676); color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:all .2s; }
+  .btn-green:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,200,83,0.35); }
+  .btn-navy { padding:11px 22px; background:linear-gradient(135deg,var(--navy),var(--navy-light)); color:#fff; border:none; border-radius:9px; font-size:.93rem; font-weight:600; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:all .2s; }
+  .btn-navy:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(26,35,126,0.3); }
+  .guardian-box { background:var(--navy-pale); border:1px solid rgba(57,73,171,0.2); border-radius:10px; padding:14px 16px; margin-bottom:4px; }
+  .guardian-box label { color:var(--navy); font-size:.88rem; font-weight:700; display:block; margin-bottom:8px; }
+  .guardian-box small { display:block; color:var(--navy-light); font-size:.78rem; margin-top:6px; }
+
+  /* ── DRIVER PAGE ── */
+  .section-divider { border:none; border-top:1.5px solid var(--gray-200); margin:22px 0; }
+  .section-label { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:.95rem; color:var(--navy); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .time-options { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:14px 0; }
+  .time-card {
+    border:2px solid var(--gray-200); border-radius:var(--radius); padding:18px 16px; cursor:pointer;
+    transition:all .2s; text-align:center; background:#fff; position:relative;
+  }
+  .time-card:hover { border-color:var(--navy-light); background:var(--navy-pale); }
+  .time-card.selected { border-color:var(--navy); background:var(--navy-pale); }
+  .time-card input[type=radio] { position:absolute; opacity:0; }
+  .time-card-icon { font-size:1.8rem; margin-bottom:6px; }
+  .time-card-label { font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:.95rem; color:var(--navy); }
+  .time-card-sub { font-size:.78rem; color:var(--gray-400); margin-top:2px; }
+  .time-confirm { background:linear-gradient(135deg,var(--navy-pale),#e8eaf6); border:1px solid rgba(57,73,171,0.2); border-radius:10px; padding:14px 18px; margin-top:14px; display:none; }
+  .time-confirm.show { display:flex; align-items:center; gap:10px; }
+  .time-confirm-icon { width:36px; height:36px; background:var(--navy); border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .time-confirm-text { font-size:.9rem; color:var(--navy); font-weight:500; }
+  .time-confirm-text strong { font-weight:700; }
+  .btn-submit-fixed { width:100%; padding:15px; background:linear-gradient(135deg,var(--navy),var(--navy-light)); color:#fff; border:none; border-radius:12px; font-size:1.05rem; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer; transition:all .2s; margin-top:24px; box-shadow:0 4px 16px rgba(26,35,126,0.3); }
+  .btn-submit-fixed:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,35,126,0.4); }
+
+  /* ── ATTENDANCE ── */
+  .filter-bar { background:#fff; border-radius:var(--radius); padding:16px 20px; border:1px solid var(--gray-200); box-shadow:var(--shadow); display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+  .filter-bar label { font-size:.85rem; font-weight:600; color:var(--gray-600); white-space:nowrap; }
+  .filter-bar input, .filter-bar select { padding:8px 12px; border:1.5px solid var(--gray-200); border-radius:8px; font-size:.88rem; font-family:'DM Sans',sans-serif; outline:none; }
+  .filter-bar input:focus, .filter-bar select:focus { border-color:var(--navy-light); }
+  .att-table-wrap { background:#fff; border-radius:var(--radius); border:1px solid var(--gray-200); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead { background:linear-gradient(135deg,var(--navy-dark),var(--navy)); }
+  thead th { padding:13px 16px; text-align:left; font-size:.82rem; font-weight:600; color:rgba(255,255,255,0.85); letter-spacing:.4px; text-transform:uppercase; }
+  tbody tr { border-bottom:1px solid var(--gray-200); transition:background .15s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:var(--gray-50); }
+  tbody td { padding:13px 16px; font-size:.9rem; color:#333; }
+  .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.78rem; font-weight:700; letter-spacing:.3px; }
+  .status-badge.present { background:#e8f5e9; color:#00c853; }
+  .status-badge.absent { background:#ffebee; color:#f44336; }
+  .status-dot { width:6px; height:6px; border-radius:50%; }
+  .status-badge.present .status-dot { background:#00c853; }
+  .status-badge.absent .status-dot { background:#f44336; }
+
+  /* ── TOAST ── */
+  #toast { position:fixed; bottom:28px; right:28px; background:var(--navy); color:#fff; padding:14px 22px; border-radius:12px; font-size:.93rem; font-weight:500; box-shadow:var(--shadow-lg); z-index:9999; transform:translateY(80px); opacity:0; transition:all .3s; pointer-events:none; display:flex; align-items:center; gap:10px; }
+  #toast.show { transform:none; opacity:1; }
+
+  /* ── OVERLAY ── */
+  #sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9; }
+  #sidebar-overlay.show { display:block; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:768px) {
+    .sidebar { position:fixed; top:0; left:0; height:100vh; z-index:10; transform:translateX(-100%); }
+    .sidebar.open { transform:none; }
+    .topbar-toggle { display:flex; }
+    .main { flex:1; width:100%; }
+    .form-grid { grid-template-columns:1fr; }
+    .stat-grid { grid-template-columns:1fr 1fr; }
+    .time-options { grid-template-columns:1fr; }
+    .page { padding:18px; }
+    .filter-bar { flex-direction:column; align-items:flex-start; }
+    table { font-size:.82rem; }
+    thead th, tbody td { padding:10px 10px; }
+    .topbar { padding:0 16px; }
+  }
+  @media(max-width:480px) {
+    .stat-grid { grid-template-columns:1fr; }
+    .signin-card { padding:32px 22px 28px; margin:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIGN IN -->
+<div id="signin-screen">
+  <div class="signin-card">
+    <div class="shield-logo">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <path d="M18 2 L33 8 L33 18 C33 26.5 26.5 33.5 18 36 C9.5 33.5 3 26.5 3 18 L3 8 Z" fill="white" opacity="0.95"/>
+        <path d="M12 18 L16 22 L24 14" stroke="#1a237e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="signin-title">e-Gate</div>
+    <div class="signin-sub">School Security System</div>
+    <div class="login-hint">
+      <strong>🔐 Admin Login</strong>
+      Email: admin@egate.com &nbsp;|&nbsp; Password: egate@123
+    </div>
+    <div class="field-wrap">
+      <span class="fi">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      </span>
+      <input type="email" id="login-email" placeholder="Email address" autocomplete="off">
+    </div>
+    <div class="field-wrap">
+      <span class="fi">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </span>
+      <input type="password" id="login-pass" placeholder="Password">
+    </div>
+    <button class="btn-primary" onclick="doSignIn()">Sign In</button>
+    <div class="login-error" id="login-error">❌ Invalid email or password. Please try again.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+          <path d="M18 2 L33 8 L33 18 C33 26.5 26.5 33.5 18 36 C9.5 33.5 3 26.5 3 18 L3 8 Z" fill="white" opacity="0.9"/>
+          <path d="M12 18 L16 22 L24 14" stroke="#1a237e" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sidebar-brand">e-Gate <span>School Security System</span></div>
+    </div>
+    <div class="sidebar-nav">
+      <a class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" onclick="navigate('registration')" id="nav-registration">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Student Registration
+      </a>
+      <a class="nav-item" onclick="navigate('driver')" id="nav-driver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Driver Details
+      </a>
+      <a class="nav-item" onclick="navigate('attendance')" id="nav-attendance">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Attendance History
+      </a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="signout-btn" onclick="signOut()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-toggle" onclick="toggleSidebar()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </div>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <div class="topbar-right">
+        <div class="topbar-avatar">A</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-heading">Welcome back, Admin 👋</div>
+      <div class="page-sub">Here's what's happening at your school today.</div>
+      <div class="stat-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon blue">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a237e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="stat-val">248</div>
+          <div class="stat-label">Total Students</div>
+          <span class="stat-badge">↑ 12 this month</span>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-icon cyan">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00838f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          </div>
+          <div class="stat-val">18</div>
+          <div class="stat-label">Total Drivers</div>
+          <span class="stat-badge">3 routes active</span>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon green">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00a152" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="stat-val">214</div>
+          <div class="stat-label">Today's Attendance</div>
+          <span class="stat-badge">86.3% present</span>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon orange">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-val">34</div>
+          <div class="stat-label">Absent Today</div>
+          <span class="stat-badge">13.7% absent</span>
+        </div>
+      </div>
+      <div class="section-title">Recent Activity</div>
+      <div class="activity-list">
+        <div class="activity-item"><div class="act-dot green"></div><div class="act-text">Aryan Sharma was picked up by Driver Ramesh Kumar</div><div class="act-time">08:15 AM</div></div>
+        <div class="activity-item"><div class="act-dot blue"></div><div class="act-text">New student Priya Mehta registered in Class 5</div><div class="act-time">07:58 AM</div></div>
+        <div class="activity-item"><div class="act-dot green"></div><div class="act-text">Drop confirmed for Kavya Nair – 3:45 PM scheduled</div><div class="act-time">07:45 AM</div></div>
+        <div class="activity-item"><div class="act-dot orange"></div><div class="act-text">Rohan Verma marked absent – guardian notified via SMS</div><div class="act-time">07:30 AM</div></div>
+        <div class="activity-item"><div class="act-dot blue"></div><div class="act-text">Driver Suresh Pillai updated mobile number</div><div class="act-time">07:10 AM</div></div>
+      </div>
+    </div>
+
+    <!-- STUDENT REGISTRATION -->
+    <div class="page" id="page-registration">
+      <div class="page-heading">Student Registration</div>
+      <div class="page-sub">Fill in the details below to register a new student.</div>
+      <div class="form-card">
+        <div class="guardian-box form-group full" style="margin-bottom:20px;">
+          <label>Guardian Code</label>
+          <input type="text" class="form-control" id="f-gcode" placeholder="e.g. GC-784321" maxlength="12">
+          <small>Enter the code sent to you via SMS</small>
+          <div class="err-msg" id="err-gcode">Please enter the guardian code sent via SMS.</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Student Name</label>
+            <input type="text" class="form-control" id="f-sname" placeholder="Full name">
+            <div class="err-msg" id="err-sname">Student name is required.</div>
+          </div>
+          <div class="form-group">
+            <label>Student Age</label>
+            <input type="number" class="form-control" id="f-age" placeholder="Age" min="3" max="20">
+            <div class="err-msg" id="err-age">Enter a valid age (3–20).</div>
+          </div>
+          <div class="form-group">
+            <label>Date of Birth</label>
+            <input type="date" class="form-control" id="f-dob">
+            <div class="err-msg" id="err-dob">Date of birth is required.</div>
+          </div>
+          <div class="form-group">
+            <label>Admission Class</label>
+            <select class="form-control" id="f-class">
+              <option value="">Select class</option>
+              <option>Class 1</option><option>Class 2</option><option>Class 3</option>
+              <option>Class 4</option><option>Class 5</option><option>Class 6</option>
+              <option>Class 7</option><option>Class 8</option><option>Class 9</option>
+              <option>Class 10</option><option>Class 11</option><option>Class 12</option>
+            </select>
+            <div class="err-msg" id="err-class">Please select an admission class.</div>
+          </div>
+          <div class="form-group">
+            <label>Parent/Guardian Occupation</label>
+            <input type="text" class="form-control" id="f-occ" placeholder="e.g. Software Engineer">
+            <div class="err-msg" id="err-occ">Occupation is required.</div>
+          </div>
+          <div class="form-group">
+            <label>Parent/Guardian Relation</label>
+            <select class="form-control" id="f-rel">
+              <option value="">Select relation</option>
+              <option>Father</option><option>Mother</option><option>Guardian</option>
+            </select>
+            <div class="err-msg" id="err-rel">Please select a relation.</div>
+          </div>
+          <div class="form-group full">
+            <label>Aadhaar Number <span class="label-note">(12 digits)</span></label>
+            <input type="text" class="form-control" id="f-aadhar" placeholder="XXXX XXXX XXXX" maxlength="14" oninput="formatAadhar(this)">
+            <div class="err-msg" id="err-aadhar">Enter a valid 12-digit Aadhaar number.</div>
+          </div>
+        </div>
+        <div style="margin-top:24px;">
+          <button class="btn-green" onclick="submitRegistration()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+            Register Student
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRIVER DETAILS -->
+    <div class="page" id="page-driver">
+      <div class="page-heading">Driver Details</div>
+      <div class="page-sub">Register driver information and schedule pickup or drop times.</div>
+      <div class="form-card" style="max-width:720px;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Driver Name</label>
+            <input type="text" class="form-control" id="d-name" placeholder="Full name">
+            <div class="err-msg" id="err-dname">Driver name is required.</div>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number <span class="label-note">(10 digits)</span></label>
+            <input type="tel" class="form-control" id="d-mobile" placeholder="9XXXXXXXXX" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'')">
+            <div class="err-msg" id="err-dmobile">Enter a valid 10-digit mobile number.</div>
+          </div>
+          <div class="form-group full">
+            <label>Email Address</label>
+            <input type="email" class="form-control" id="d-email" placeholder="driver@example.com">
+            <div class="err-msg" id="err-demail">Enter a valid email address.</div>
+          </div>
+        </div>
+        <hr class="section-divider">
+        <div class="section-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a237e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Track Your Children
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Select Student</label>
+            <select class="form-control" id="d-student">
+              <option value="">Choose student</option>
+              <option>Aryan Sharma</option><option>Priya Mehta</option>
+              <option>Kavya Nair</option><option>Rohan Verma</option>
+              <option>Sneha Patel</option><option>Aditya Singh</option>
+            </select>
+            <div class="err-msg" id="err-dstudent">Please select a student.</div>
+          </div>
+          <div class="form-group">
+            <label>Select Time</label>
+            <input type="time" class="form-control" id="d-time">
+            <div class="err-msg" id="err-dtime">Please select a time.</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn-navy" onclick="getTime()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Get Time
+          </button>
+        </div>
+        <div id="time-options-wrap" style="display:none;margin-top:18px;">
+          <div class="section-label" style="margin-bottom:10px;">Select Type</div>
+          <div class="time-options">
+            <label class="time-card" id="tc-pickup" onclick="selectTimeType('pickup')">
+              <input type="radio" name="timetype" value="pickup">
+              <div class="time-card-icon">🌅</div>
+              <div class="time-card-label">Pickup Time</div>
+              <div class="time-card-sub">Morning school pickup</div>
+            </label>
+            <label class="time-card" id="tc-drop" onclick="selectTimeType('drop')">
+              <input type="radio" name="timetype" value="drop">
+              <div class="time-card-icon">🏠</div>
+              <div class="time-card-label">Drop Time</div>
+              <div class="time-card-sub">Afternoon school drop</div>
+            </label>
+          </div>
+          <div class="time-confirm" id="time-confirm">
+            <div class="time-confirm-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="time-confirm-text" id="time-confirm-text"></div>
+          </div>
+        </div>
+        <button class="btn-submit-fixed" onclick="submitDriver()">Submit Driver Details</button>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="page" id="page-attendance">
+      <div class="page-heading">Child Attendance History</div>
+      <div class="page-sub">View and filter attendance records for all students.</div>
+      <div class="filter-bar">
+        <label>From:</label>
+        <input type="date" id="att-from" value="2025-03-01">
+        <label>To:</label>
+        <input type="date" id="att-to" value="2025-03-28">
+        <label>Status:</label>
+        <select id="att-status">
+          <option value="">All</option>
+          <option value="Present">Present</option>
+          <option value="Absent">Absent</option>
+        </select>
+        <button class="btn-navy" onclick="filterAttendance()">Filter</button>
+      </div>
+      <div class="att-table-wrap">
+        <table id="att-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Date</th><th>Student Name</th><th>Pickup Time</th><th>Drop Time</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="att-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CREDENTIALS ──
+const ADMIN_EMAIL = 'admin@egate.com';
+const ADMIN_PASS  = 'egate@123';
+
+// ── DATA ──
+const attData = [
+  {date:'2025-03-28',name:'Aryan Sharma',pickup:'07:55 AM',drop:'03:45 PM',status:'Present'},
+  {date:'2025-03-28',name:'Priya Mehta',pickup:'08:10 AM',drop:'03:50 PM',status:'Present'},
+  {date:'2025-03-27',name:'Kavya Nair',pickup:'—',drop:'—',status:'Absent'},
+  {date:'2025-03-27',name:'Rohan Verma',pickup:'07:48 AM',drop:'03:40 PM',status:'Present'},
+  {date:'2025-03-26',name:'Sneha Patel',pickup:'08:00 AM',drop:'03:55 PM',status:'Present'},
+  {date:'2025-03-26',name:'Aditya Singh',pickup:'—',drop:'—',status:'Absent'},
+  {date:'2025-03-25',name:'Aryan Sharma',pickup:'07:52 AM',drop:'03:42 PM',status:'Present'},
+  {date:'2025-03-25',name:'Priya Mehta',pickup:'08:05 AM',drop:'03:48 PM',status:'Present'},
+  {date:'2025-03-24',name:'Kavya Nair',pickup:'07:58 AM',drop:'03:38 PM',status:'Present'},
+  {date:'2025-03-24',name:'Rohan Verma',pickup:'—',drop:'—',status:'Absent'},
+  {date:'2025-03-23',name:'Sneha Patel',pickup:'07:45 AM',drop:'03:50 PM',status:'Present'},
+  {date:'2025-03-22',name:'Aditya Singh',pickup:'08:12 AM',drop:'04:00 PM',status:'Present'},
+];
+
+function renderAttendance(data) {
+  const b = document.getElementById('att-body');
+  b.innerHTML = data.map((r,i) => `
+    <tr>
+      <td><strong>${i+1}</strong></td>
+      <td>${r.date}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.pickup}</td>
+      <td>${r.drop}</td>
+      <td><span class="status-badge ${r.status.toLowerCase()}"><span class="status-dot"></span>${r.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+function filterAttendance() {
+  const from = document.getElementById('att-from').value;
+  const to = document.getElementById('att-to').value;
+  const st = document.getElementById('att-status').value;
+  const filtered = attData.filter(r => {
+    const inRange = (!from || r.date >= from) && (!to || r.date <= to);
+    const inStatus = !st || r.status === st;
+    return inRange && inStatus;
+  });
+  renderAttendance(filtered);
+  showToast(`Showing ${filtered.length} record(s)`);
+}
+
+// ── NAV ──
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  const titles = {dashboard:'Dashboard',registration:'Student Registration',driver:'Driver Details',attendance:'Attendance History'};
+  document.getElementById('topbar-title').textContent = titles[page];
+  closeSidebar();
+}
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+
+// ── SIGN IN (FIXED - only accepts correct credentials) ──
+function doSignIn() {
+  const e = document.getElementById('login-email').value.trim().toLowerCase();
+  const p = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  if(!e || !p) { errEl.textContent = '❌ Please enter email and password.'; errEl.classList.add('show'); return; }
+  if(e !== ADMIN_EMAIL || p !== ADMIN_PASS) {
+    errEl.textContent = '❌ Invalid email or password. Please try again.';
+    errEl.classList.add('show');
+    document.getElementById('login-email').classList.add('err');
+    document.getElementById('login-pass').classList.add('err');
+    return;
+  }
+  errEl.classList.remove('show');
+  document.getElementById('login-email').classList.remove('err');
+  document.getElementById('login-pass').classList.remove('err');
+  document.getElementById('signin-screen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  renderAttendance(attData);
+}
+
+function signOut() {
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('signin-screen').style.display='flex';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+// ── AADHAAR FORMAT ──
+function formatAadhar(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,12);
+  el.value = v.replace(/(\d{4})(?=\d)/g,'$1 ').trim();
+}
+
+// ── REGISTRATION VALIDATION ──
+function submitRegistration() {
+  let ok = true;
+  function v(id, errId, test) {
+    const el = document.getElementById(id);
+    const err = document.getElementById(errId);
+    if(!test(el.value)) { el.classList.add('err'); err.classList.add('show'); ok=false; }
+    else { el.classList.remove('err'); err.classList.remove('show'); }
+  }
+  v('f-gcode','err-gcode', val => val.trim().length >= 4);
+  v('f-sname','err-sname', val => val.trim().length >= 2);
+  v('f-age','err-age', val => val && +val >= 3 && +val <= 20);
+  v('f-dob','err-dob', val => val !== '');
+  v('f-class','err-class', val => val !== '');
+  v('f-occ','err-occ', val => val.trim().length >= 2);
+  v('f-rel','err-rel', val => val !== '');
+  v('f-aadhar','err-aadhar', val => val.replace(/\s/g,'').length === 12);
+  if(ok) { showToast('✓ Student registered successfully!'); resetForm(['f-gcode','f-sname','f-age','f-dob','f-class','f-occ','f-rel','f-aadhar']); }
+}
+
+function resetForm(ids) { ids.forEach(id => { const el = document.getElementById(id); if(el.tagName==='SELECT') el.selectedIndex=0; else el.value=''; }); }
+
+// ── DRIVER ──
+function getTime() {
+  let ok = true;
+  ['d-student','d-time'].forEach(id => {
+    const el = document.getElementById(id);
+    const errId = 'err-d' + id.split('-')[1];
+    if(!el.value) { el.classList.add('err'); document.getElementById(errId).classList.add('show'); ok=false; }
+    else { el.classList.remove('err'); document.getElementById(errId).classList.remove('show'); }
+  });
+  if(!ok) return;
+  document.getElementById('time-options-wrap').style.display='block';
+  document.getElementById('time-confirm').classList.remove('show');
+  document.querySelectorAll('.time-card').forEach(c=>c.classList.remove('selected'));
+}
+
+function selectTimeType(type) {
+  document.querySelectorAll('.time-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('tc-'+type).classList.add('selected');
+  const t = document.getElementById('d-time').value;
+  const s = document.getElementById('d-student').value;
+  const [h,m] = t.split(':');
+  const hr = +h; const suffix = hr>=12?'PM':'AM'; const hr12 = hr%12||12;
+  const timeStr = `${hr12}:${m} ${suffix}`;
+  const label = type==='pickup'?'Pickup':'Drop';
+  const conf = document.getElementById('time-confirm');
+  conf.classList.add('show');
+  document.getElementById('time-confirm-text').innerHTML = `<strong>${label} Time Confirmed</strong> – ${s} at <strong>${timeStr}</strong>`;
+}
+
+function submitDriver() {
+  let ok = true;
+  function vd(id, errId, test) {
+    const el = document.getElementById(id);
+    const err = document.getElementById(errId);
+    if(!test(el.value)) { el.classList.add('err'); err.classList.add('show'); ok=false; }
+    else { el.classList.remove('err'); err.classList.remove('show'); }
+  }
+  vd('d-name','err-dname', v => v.trim().length >= 2);
+  vd('d-mobile','err-dmobile', v => /^\d{10}$/.test(v));
+  vd('d-email','err-demail', v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+  vd('d-student','err-dstudent', v => v !== '');
+  vd('d-time','err-dtime', v => v !== '');
+  if(!ok) return;
+  showToast('✓ Driver details submitted successfully!');
+  ['d-name','d-mobile','d-email'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('d-student').selectedIndex=0;
+  document.getElementById('d-time').value='';
+  document.getElementById('time-options-wrap').style.display='none';
+}
+
+// ── TOAST ──
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.innerHTML = (type==='ok'?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>') + msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doSignIn(); });
+document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') doSignIn(); });
+</script>
+</body>
+</html>
